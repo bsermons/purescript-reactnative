@@ -13,11 +13,12 @@ module ReactNative.Components.ListView (
 ) where
 
 import Prelude
+
 import Control.Monad.Eff.Uncurried (EffFn2)
 import Data.Function.Uncurried (Fn2, Fn3, Fn4, mkFn2, mkFn4, runFn3, runFn4)
 import Data.Maybe (Maybe(..))
 import Data.Nullable (Nullable, toNullable)
-import Data.Record (merge)
+import Data.Record.Builder (Builder, build, merge)
 import Data.Record.Class (class Subrow)
 import Data.StrMap (StrMap)
 import React (ReactElement)
@@ -81,10 +82,13 @@ listViewDataSource = cloneWithRows (listViewDataSource' {})
 sectionListViewDataSource :: forall blob a section. DataSourceSectionCloneable blob a section => blob -> ListViewDataSource' blob a section
 sectionListViewDataSource = cloneWithRowsAndSections (listViewDataSource' {sectionHeaderHasChanged:refEquality :: Fn2 section section Boolean})
 
-listViewDataSource' :: forall blob a section o
-  .  Subrow o (ListViewDataSourcePropsO blob a section)
-  => {|o} -> ListViewDataSource' blob a section
-listViewDataSource' p = listViewDataSourceImpl $ merge ((unsafeCoerce {rowHasChanged:refEquality}) :: ListViewDataSourceProps blob a section) p
+listViewDataSource':: forall section a blob o r
+   . Union o r (ListViewDataSourcePropsO blob a section)
+  => { | o } -> ListViewDataSource' blob a section
+listViewDataSource' p = listViewDataSourceImpl $ build mergeProps p
+  where
+    mergeProps :: Builder { | o} (Record (ListViewDataSourcePropsO blob a section))
+    mergeProps = merge (unsafeCoerce { rowHasChanged:refEquality })
 
 cloneWithRows :: forall a. ListViewDataSource' (Array a) a (Array a) -> Array a -> ListViewDataSource' (Array a) a (Array a)
 cloneWithRows = cloneWithRows' Nothing
